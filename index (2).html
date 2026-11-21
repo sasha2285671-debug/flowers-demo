@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Флёр — цветочная мастерская</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<!-- Библиотека Telegram: кнопки, вибрация, цвет шапки внутри Telegram -->
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  /* VOICE: нежный, праздничный, дорогой цветочный бутик
+     IDEA: витрина цветочной мастерской — подборки по поводу, букет в руках, лепестки в воздухе
+     PICTURE: крупный букет пионов в круге с вращающимся кольцом на первом экране
+     COLOUR/TYPE: розовая пудра + малиновый акцент + зелень стеблей; Cormorant для заголовков, Manrope для текста
+     LAYOUT: шапка, герой, круги-поводы, категории, сетка 2 колонки, шторка товара снизу */
+  :root {
+    --bg: #fbeaf0; --bg2: #f8d3de; --bg3: #fff0e6;
+    --card: #ffffff; --text: #3b1622; --hint: #9b7a84;
+    --accent: #d6336c; --accent2: #f06292; --accent-dark: #b0244f;
+    --leaf: #6f9474; --leaf-soft: #e7f0e5; --gold: #e2a93b;
+    --soft: #fff4f7; --line: #f4d6df;
+    --radius: 22px;
+    --serif: "Cormorant Garamond", Georgia, serif;
+    --sans: "Manrope", -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; min-width: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: var(--sans); color: var(--text); background: var(--bg);
+         padding-bottom: 100px; max-width: 520px; margin: 0 auto; overflow-x: clip; }
+  body::before {
+    content: ""; position: fixed; inset: 0; z-index: -2;
+    background:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cg fill='none' stroke='%23d6336c' stroke-opacity='.07' stroke-width='1.4'%3E%3Cg transform='translate(34 36)'%3E%3Ccircle r='4'/%3E%3Cellipse cy='-10' rx='4.5' ry='6.5'/%3E%3Cellipse cy='10' rx='4.5' ry='6.5'/%3E%3Cellipse cx='-10' rx='6.5' ry='4.5'/%3E%3Cellipse cx='10' rx='6.5' ry='4.5'/%3E%3C/g%3E%3Cg transform='translate(118 112) rotate(40) scale(.7)'%3E%3Ccircle r='4'/%3E%3Cellipse cy='-10' rx='4.5' ry='6.5'/%3E%3Cellipse cy='10' rx='4.5' ry='6.5'/%3E%3Cellipse cx='-10' rx='6.5' ry='4.5'/%3E%3Cellipse cx='10' rx='6.5' ry='4.5'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"),
+      radial-gradient(circle at 5% 0%, var(--bg2) 0, transparent 40%),
+      radial-gradient(circle at 100% 30%, var(--bg3) 0, transparent 40%),
+      radial-gradient(circle at 0% 75%, var(--bg3) 0, transparent 35%),
+      radial-gradient(circle at 100% 100%, var(--bg2) 0, transparent 40%), var(--bg);
+  }
+  button { font: inherit; border: none; cursor: pointer; color: inherit; background: none; }
+  .hidden { display: none !important; }
+  svg.i { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* ---------- Лепестки ---------- */
+  #petals { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
+  .petal { position: absolute; top: -30px; border-radius: 150% 0 150% 0; opacity: .5;
+           background: linear-gradient(135deg, #ffc9d7, #f07c9c); animation: fall linear infinite; }
+  @keyframes fall {
+    0% { transform: translate(0,0) rotate(0); } 25% { transform: translate(30px,25vh) rotate(90deg); }
+    50% { transform: translate(-20px,50vh) rotate(180deg); } 75% { transform: translate(25px,75vh) rotate(270deg); }
+    100% { transform: translate(0,110vh) rotate(360deg); }
+  }
+
+  /* ---------- Шапка ---------- */
+  header { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between;
+           padding: 12px 16px; background: rgba(251,234,240,.8); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .logo { width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; color: #fff;
+          background: linear-gradient(135deg, var(--accent2), var(--accent)); font: 700 24px/1 var(--serif);
+          box-shadow: 0 6px 14px rgba(214,51,108,.35); }
+  .brand h1 { font: 700 26px/1 var(--serif); letter-spacing: .5px; }
+  .brand p { font-size: 11.5px; color: var(--hint); margin-top: 3px; }
+  .icon-btn { position: relative; width: 46px; height: 46px; border-radius: 16px; background: var(--card);
+              display: grid; place-items: center; box-shadow: 0 6px 16px rgba(214,51,108,.14); }
+  .badge { position: absolute; top: -5px; right: -5px; min-width: 21px; height: 21px; padding: 0 5px; border-radius: 11px;
+           background: var(--accent); color: #fff; border: 2px solid var(--bg); font-size: 11px; font-weight: 800;
+           display: flex; align-items: center; justify-content: center; }
+  .bump { animation: bump .4s; }
+  @keyframes bump { 40% { transform: scale(1.3); } }
+
+  /* ---------- Герой ---------- */
+  .hero { position: relative; margin: 4px 16px 0; min-height: 340px; border-radius: 30px; overflow: hidden;
+          background: linear-gradient(150deg, #ffffff 0%, #ffe3ec 55%, #ffd2c2 100%);
+          box-shadow: 0 14px 34px rgba(214,51,108,.18); padding: 24px 20px; }
+  .hero small { display: inline-block; font-size: 12px; font-weight: 700; color: var(--accent);
+                background: #fff; padding: 6px 11px; border-radius: 20px; box-shadow: 0 3px 10px rgba(214,51,108,.12); }
+  .hero h2 { font: 700 38px/1.02 var(--serif); margin: 14px 0 12px; max-width: 290px; }
+  .hero h2 em { color: var(--accent); }
+  .hero p { font-size: 13.5px; color: var(--hint); max-width: 47%; line-height: 1.45; }
+  .hero .cta { margin-top: 18px; padding: 13px 20px; border-radius: 16px; color: #fff; font-weight: 700; font-size: 14px;
+               background: linear-gradient(120deg, var(--accent), var(--accent2)); box-shadow: 0 8px 18px rgba(214,51,108,.35); }
+  .hero-pic { position: absolute; right: -28px; bottom: -28px; width: 210px; height: 210px; }
+  .hero-pic img { position: absolute; inset: 18px; width: calc(100% - 36px); height: calc(100% - 36px);
+                  border-radius: 50%; object-fit: cover; background: #fff; box-shadow: 0 16px 30px rgba(214,51,108,.25); }
+  .hero-pic .ring { position: absolute; inset: 0; border-radius: 50%; border: 2px dashed rgba(214,51,108,.45);
+                    animation: spin 26s linear infinite; }
+  .hero-pic .ring::after { content: ""; position: absolute; top: 8px; left: 50%; width: 14px; height: 14px; border-radius: 50%;
+                           background: var(--leaf); box-shadow: 0 0 0 4px #fff; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .sticker { position: absolute; z-index: 2; right: 14px; top: 14px; background: var(--leaf); color: #fff; border-radius: 50%;
+             width: 66px; height: 66px; display: grid; place-items: center; text-align: center; font-size: 11px; font-weight: 800;
+             line-height: 1.1; transform: rotate(-12deg); box-shadow: 0 8px 16px rgba(111,148,116,.4); }
+  .sticker b { display: block; font-size: 19px; }
+
+  /* ---------- Преимущества ---------- */
+  .perks { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; padding: 14px 16px 0; }
+  .perk { background: rgba(255,255,255,.75); border-radius: 16px; padding: 10px 6px; text-align: center;
+          font-size: 11.5px; font-weight: 600; line-height: 1.25; }
+  .perk svg { color: var(--accent); margin-bottom: 4px; }
+
+  /* ---------- Поводы (круги как сторис) ---------- */
+  .sec-title { display: flex; justify-content: space-between; align-items: baseline; padding: 22px 16px 10px; }
+  .sec-title h3 { font: 700 25px/1 var(--serif); }
+  .sec-title button { color: var(--accent); font-size: 13px; font-weight: 600; }
+  .occs { display: flex; gap: 14px; overflow-x: auto; padding: 2px 16px 4px; scrollbar-width: none; }
+  .occs::-webkit-scrollbar, .cats::-webkit-scrollbar, .addons::-webkit-scrollbar { display: none; }
+  .occ { flex: none; width: 72px; text-align: center; font-size: 12px; font-weight: 600; }
+  .occ .ring { width: 72px; height: 72px; border-radius: 50%; padding: 3px; margin-bottom: 6px;
+               background: conic-gradient(from 200deg, var(--accent), var(--gold), var(--accent2), var(--accent)); }
+  .occ.active .ring { background: var(--leaf); }
+  .occ img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 3px solid #fff; background: #fff; display: block; }
+
+  /* ---------- Категории ---------- */
+  .cats { display: flex; gap: 8px; overflow-x: auto; padding: 4px 16px 6px; scrollbar-width: none; }
+  .cat { flex: none; padding: 9px 16px; border-radius: 20px; white-space: nowrap; background: var(--card); font-size: 14px; font-weight: 600;
+         box-shadow: 0 2px 8px rgba(214,51,108,.08); transition: .2s; }
+  .cat.active { background: var(--text); color: #fff; }
+  .filter-note { margin: 4px 16px 0; padding: 10px 14px; border-radius: 14px; background: var(--leaf-soft); color: #3f5e44;
+                 font-size: 13px; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
+
+  /* ---------- Каталог ---------- */
+  .grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; padding: 12px 16px; }
+  .card { position: relative; background: var(--card); border-radius: var(--radius); overflow: hidden; cursor: pointer;
+          box-shadow: 0 8px 22px rgba(214,51,108,.12); animation: appear .4s ease both; transition: transform .15s; }
+  .card:active { transform: scale(.98); }
+  @keyframes appear { from { opacity: 0; transform: translateY(14px); } }
+  .pic { position: relative; aspect-ratio: 1; background: #fff; display: grid; place-items: center; font-size: 50px; overflow: hidden; }
+  .pic img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .tag { position: absolute; top: 10px; left: 10px; z-index: 1; padding: 4px 9px; border-radius: 10px; font-size: 11px; font-weight: 800; color: #fff; }
+  .tag.hit { background: var(--accent); } .tag.new { background: var(--leaf); } .tag.sale { background: var(--gold); }
+  .like { position: absolute; top: 8px; right: 8px; z-index: 2; width: 34px; height: 34px; border-radius: 50%;
+          background: rgba(255,255,255,.92); display: grid; place-items: center; color: var(--hint); }
+  .like.on { color: var(--accent); } .like.on svg { fill: var(--accent); }
+  .like svg { width: 18px; height: 18px; }
+  .card .info { padding: 10px 12px 12px; }
+  .card .name { font-size: 14px; font-weight: 700; line-height: 1.25; min-height: 35px; }
+  .card .bottom-row { display: flex; align-items: center; justify-content: space-between; margin-top: 6px; }
+  .card .price { font-size: 16px; font-weight: 800; color: var(--accent); white-space: nowrap; }
+  .card .price small { font-size: 11px; color: var(--hint); font-weight: 500; }
+  .card .old { display: block; font-size: 11.5px; color: var(--hint); text-decoration: line-through; font-weight: 500; }
+  .plus { width: 38px; height: 38px; border-radius: 13px; flex: none; display: grid; place-items: center; color: #fff;
+          background: linear-gradient(135deg, var(--accent2), var(--accent)); box-shadow: 0 6px 12px rgba(214,51,108,.3); }
+  .plus:active { transform: scale(.9); }
+  .in-cart { position: absolute; bottom: 8px; left: 8px; z-index: 1; background: var(--leaf); color: #fff;
+             font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 10px; }
+
+  /* ---------- Летящий в корзину букет ---------- */
+  .flyer { position: fixed; z-index: 100; border-radius: 50%; object-fit: cover; pointer-events: none;
+           transition: transform .7s cubic-bezier(.55,-0.25,.7,1), opacity .7s; box-shadow: 0 10px 20px rgba(0,0,0,.2); }
+
+  /* ---------- Шторка товара ---------- */
+  .overlay { position: fixed; inset: 0; z-index: 40; background: rgba(59,22,34,.45); opacity: 0; pointer-events: none; transition: opacity .3s; }
+  .overlay.open { opacity: 1; pointer-events: auto; }
+  .sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 50; max-width: 520px; margin: 0 auto; max-height: 92vh; overflow-y: auto;
+           background: var(--card); border-radius: 28px 28px 0 0; transform: translateY(105%); transition: transform .4s cubic-bezier(.2,.9,.3,1); }
+  .sheet.open { transform: translateY(0); }
+  .sheet .grab { position: sticky; top: 0; z-index: 3; height: 0; }
+  .sheet .grab::before { content: ""; position: absolute; top: 10px; left: 50%; width: 44px; height: 5px; margin-left: -22px; border-radius: 3px; background: rgba(0,0,0,.18); }
+  .sheet .close { position: absolute; top: 14px; right: 14px; z-index: 3; width: 38px; height: 38px; border-radius: 50%; background: rgba(255,255,255,.92); display: grid; place-items: center; }
+  .sheet .pic { aspect-ratio: 1.1; font-size: 90px; }
+  .sheet .body { padding: 18px 18px 22px; }
+  .sheet h3 { font: 700 30px/1.05 var(--serif); }
+  .sheet .desc { color: var(--hint); font-size: 14px; line-height: 1.5; margin: 8px 0 12px; }
+  .compo { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+  .compo span { background: var(--leaf-soft); color: #3f5e44; font-size: 12px; font-weight: 600; padding: 5px 10px; border-radius: 10px; }
+  .label { font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+  .sizes { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; margin-bottom: 18px; }
+  .size { border: 2px solid var(--line); border-radius: 16px; padding: 10px 6px; text-align: center; transition: .2s; }
+  .size b { display: block; font-size: 13.5px; }
+  .size span { font-size: 12px; color: var(--hint); white-space: nowrap; }
+  .size.active { border-color: var(--accent); background: var(--soft); }
+  .big-btn { display: block; width: 100%; padding: 16px; border-radius: 18px; color: #fff; font-size: 16px; font-weight: 800;
+             background: linear-gradient(120deg, var(--accent), var(--accent2)); box-shadow: 0 10px 22px rgba(214,51,108,.35); transition: transform .1s; }
+  .big-btn:active { transform: scale(.97); }
+
+  /* ---------- Нижняя кнопка ---------- */
+  .bottom { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; padding: 12px 16px 20px; background: linear-gradient(transparent, var(--bg) 35%); }
+  .bottom .big-btn { max-width: 488px; margin: 0 auto; }
+
+  /* ---------- Корзина и оформление ---------- */
+  .screen { padding: 4px 16px 16px; }
+  .screen h2 { font: 700 32px/1 var(--serif); margin: 10px 0 16px; }
+  .back { color: var(--accent); font-size: 14px; font-weight: 600; padding: 4px 0; }
+  .row { display: flex; align-items: center; gap: 12px; background: var(--card); border-radius: 20px; padding: 10px; margin-bottom: 10px;
+         box-shadow: 0 4px 14px rgba(214,51,108,.08); }
+  .row .pic { width: 66px; height: 66px; flex: none; border-radius: 16px; font-size: 30px; }
+  .row .mid { flex: 1; }
+  .row .name { font-weight: 700; font-size: 14px; line-height: 1.25; }
+  .row .meta { color: var(--hint); font-size: 12.5px; margin-top: 3px; }
+  .qty { display: flex; align-items: center; gap: 4px; background: var(--soft); border-radius: 14px; padding: 3px; }
+  .qty button { width: 32px; height: 32px; border-radius: 11px; background: #fff; font-size: 17px; font-weight: 700; color: var(--accent); }
+  .qty span { width: 20px; text-align: center; font-weight: 800; font-size: 14px; }
+  .progress { background: var(--card); border-radius: 18px; padding: 14px; margin: 4px 0 16px; font-size: 13px; font-weight: 600; }
+  .bar { height: 8px; background: var(--soft); border-radius: 4px; margin-top: 9px; overflow: hidden; }
+  .bar i { display: block; height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--leaf), #9cc39f); transition: width .5s; }
+  .addons { display: flex; gap: 10px; overflow-x: auto; margin: 0 -16px 16px; padding: 2px 16px 6px; scrollbar-width: none; }
+  .addon { flex: none; width: 112px; background: var(--card); border-radius: 18px; padding: 12px 10px; text-align: center; border: 2px solid transparent; transition: .2s; }
+  .addon.on { border-color: var(--leaf); background: #f6faf5; }
+  .addon .em { font-size: 30px; }
+  .addon b { display: block; font-size: 12.5px; margin: 4px 0 2px; }
+  .addon span { font-size: 12px; color: var(--accent); font-weight: 800; }
+  .summary { background: var(--card); border-radius: 20px; padding: 14px 16px; }
+  .summary div { display: flex; justify-content: space-between; font-size: 14px; padding: 4px 0; color: var(--hint); }
+  .summary .total { color: var(--text); font-size: 19px; font-weight: 800; border-top: 1px dashed var(--line); margin-top: 6px; padding-top: 10px; }
+  .empty { text-align: center; color: var(--hint); padding: 50px 0; }
+  .empty img { width: 150px; height: 150px; border-radius: 50%; object-fit: cover; opacity: .9; margin-bottom: 14px; }
+  .empty b { display: block; color: var(--text); font: 700 24px var(--serif); margin-bottom: 4px; }
+
+  .seg { display: grid; grid-template-columns: 1fr 1fr; background: var(--card); border-radius: 16px; padding: 4px; margin-bottom: 6px; }
+  .seg button { padding: 11px; border-radius: 12px; font-weight: 700; font-size: 14px; color: var(--hint); transition: .2s; }
+  .seg button.active { background: var(--accent); color: #fff; }
+  form label { display: block; font-size: 12.5px; font-weight: 700; color: var(--hint); margin: 14px 0 6px; }
+  form input, form textarea, form select { width: 100%; padding: 13px 14px; border-radius: 14px; border: 1.5px solid var(--line);
+    background: var(--card); color: var(--text); font: inherit; font-size: 16px; outline: none; }
+  form input:focus, form textarea:focus, form select:focus { border-color: var(--accent); }
+  form textarea { min-height: 70px; resize: vertical; }
+  .two { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
+  .check { display: flex; align-items: center; gap: 10px; background: var(--card); border-radius: 14px; padding: 12px 14px; margin-top: 10px;
+           font-size: 14px; font-weight: 600; cursor: pointer; }
+  .check input { width: 20px; height: 20px; accent-color: var(--accent); flex: none; }
+  .error { color: #d12c2c; font-size: 13px; font-weight: 600; margin-top: 12px; }
+
+  .success { text-align: center; padding: 60px 24px; }
+  .success .pic { width: 170px; height: 170px; margin: 0 auto 20px; border-radius: 50%; box-shadow: 0 16px 34px rgba(214,51,108,.25); animation: bump 1s; }
+  .success h2 { font: 700 36px/1.05 var(--serif); margin-bottom: 10px; }
+  .success p { color: var(--hint); line-height: 1.55; font-size: 14.5px; }
+  .confetti { position: fixed; top: 40%; left: 50%; z-index: 60; width: 12px; height: 12px; border-radius: 150% 0 150% 0; pointer-events: none;
+              animation: burst 1.6s cubic-bezier(.1,.7,.3,1) forwards; }
+  @keyframes burst { to { transform: translate(var(--x), var(--y)) rotate(var(--r)); opacity: 0; } }
+  .demo-note { font-size: 12px; color: var(--hint); text-align: center; padding: 16px; }
+
+  @media (prefers-reduced-motion: reduce) { #petals, .hero-pic .ring { animation: none; display: none; } }
+  @media (max-width: 370px) { .hero h2 { font-size: 32px; } .hero-pic { width: 180px; height: 180px; } .sticker { display: none; } }
+</style>
+</head>
+<body>
+<div id="petals"></div>
+
+<header>
+  <div class="brand">
+    <div class="logo">Ф</div>
+    <div><h1>Флёр</h1><p>цветочная мастерская</p></div>
+  </div>
+  <button class="icon-btn" id="cartBtn" onclick="show('cart')" aria-label="Корзина">
+    <svg class="i" viewBox="0 0 24 24"><path d="M6 7h12l-1 13H7L6 7z"/><path d="M9 7V5.5a3 3 0 0 1 6 0V7"/></svg>
+    <span class="badge hidden" id="badge">0</span>
+  </button>
+</header>
+
+<!-- ================= КАТАЛОГ ================= -->
+<main id="catalog">
+  <section class="hero">
+    <small>−10% на первый заказ</small>
+    <h2>Цветы, которые <em>скажут</em> за вас</h2>
+    <p>Соберём букет за час и привезём с открыткой</p>
+    <button class="cta" onclick="document.getElementById('cats').scrollIntoView({behavior:'smooth', block:'center'})">Выбрать букет</button>
+    <div class="sticker"><div><b>2 ч</b>доставка</div></div>
+    <div class="hero-pic"><div class="ring"></div><img src="7.jpg" alt="Букет пионов"></div>
+  </section>
+
+  <div class="perks">
+    <div class="perk"><svg class="i" viewBox="0 0 24 24"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/></svg><br>Доставка<br>от 2 часов</div>
+    <div class="perk"><svg class="i" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><br>Фото букета<br>до отправки</div>
+    <div class="perk"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 8l9 6 9-6"/></svg><br>Открытка<br>в подарок</div>
+  </div>
+
+  <div class="sec-title"><h3>Цветы</h3></div>
+  <div class="occs" id="occs"></div>
+
+  <div class="sec-title"><h3>Каталог</h3><button onclick="resetFilters()">Все букеты</button></div>
+  <div class="cats" id="cats"></div>
+  <div id="filterNote"></div>
+  <div class="grid" id="grid"></div>
+  <p class="demo-note">Демо-версия. Магазин вымышленный, заказы не отправляются.</p>
+</main>
+
+<!-- ================= КОРЗИНА ================= -->
+<section id="cart" class="screen hidden">
+  <button class="back" onclick="show('catalog')">← В каталог</button>
+  <h2>Корзина</h2>
+  <div id="cartBody"></div>
+</section>
+
+<!-- ================= ОФОРМЛЕНИЕ ================= -->
+<section id="checkout" class="screen hidden">
+  <button class="back" onclick="show('cart')">← В корзину</button>
+  <h2>Оформление</h2>
+  <form onsubmit="return false">
+    <div class="seg" id="segDelivery">
+      <button type="button" class="active" onclick="setDelivery(true)">Доставка</button>
+      <button type="button" onclick="setDelivery(false)">Самовывоз</button>
+    </div>
+    <label>Ваше имя</label><input id="fName" placeholder="Анна">
+    <label>Ваш телефон</label><input id="fPhone" type="tel" placeholder="+7 900 000-00-00">
+    <label class="check"><input type="checkbox" id="fOther" onchange="recipientBox.classList.toggle('hidden', !this.checked)">Букет получит другой человек</label>
+    <div id="recipientBox" class="hidden">
+      <div class="two">
+        <div><label>Имя получателя</label><input id="fRName" placeholder="Мария"></div>
+        <div><label>Его телефон</label><input id="fRPhone" type="tel" placeholder="+7 …"></div>
+      </div>
+      <label class="check"><input type="checkbox" id="fSecret">Не говорить, от кого букет</label>
+    </div>
+    <div id="addrBox"><label>Адрес доставки</label><input id="fAddr" placeholder="Улица, дом, квартира"></div>
+    <div class="two">
+      <div><label>Дата</label><input id="fDate" type="date"></div>
+      <div><label>Время</label>
+        <select id="fTime"><option>10:00–12:00</option><option>12:00–14:00</option><option>14:00–16:00</option><option>16:00–18:00</option><option>18:00–20:00</option></select>
+      </div>
+    </div>
+    <label>Текст открытки</label><textarea id="fNote" placeholder="С днём рождения! Ты лучшая ♡"></textarea>
+    <div class="summary" style="margin-top:16px" id="checkoutSummary"></div>
+    <div id="formError" class="error hidden"></div>
+  </form>
+</section>
+
+<!-- ================= ГОТОВО ================= -->
+<section id="done" class="hidden">
+  <div class="success">
+    <div class="pic"><img src="1.jpg" alt=""></div>
+    <h2>Заказ принят!</h2>
+    <p id="doneText"></p>
+  </div>
+</section>
+
+<!-- Шторка товара -->
+<div class="overlay" id="overlay" onclick="closeSheet()"></div>
+<div class="sheet" id="sheet"></div>
+
+<div class="bottom"><button class="big-btn hidden" id="mainBtn"></button></div>
+
+<script>
+{
+// ---------- Telegram ----------
+const tg = window.Telegram ? window.Telegram.WebApp : null;
+if (tg) { tg.ready(); tg.expand(); try { tg.setHeaderColor('#fbeaf0'); tg.setBackgroundColor('#fbeaf0'); } catch (e) {} }
+const vibrate = (t = 'light') => { try { tg && tg.HapticFeedback.impactOccurred(t); } catch (e) {} };
+
+// ---------- ДАННЫЕ. Чтобы поменять каталог — правьте эти списки ----------
+const products = [
+  { id: 1, name: 'Белые розы «Нежность»', price: 6990, old: 7990, cat: 'Розы', img: '1.jpg', emoji: '🌹', tag: 'sale',
+    occ: ['wedding', 'love', 'mom'], desc: 'Пышное облако белых роз на зелёной подушке из листьев. Букет, который не нужно объяснять.',
+    compo: ['Роза белая', 'Салал', 'Атласная лента'] },
+  { id: 2, name: '25 красных роз', price: 5990, cat: 'Розы', img: '2.jpg', emoji: '🌹', tag: 'hit',
+    occ: ['love', 'birthday'], desc: 'Классика, которая работает всегда: высокие красные розы с алой лентой.',
+    compo: ['Роза Red Naomi', 'Лента'] },
+  { id: 3, name: 'Тюльпаны микс', price: 2290, cat: 'Тюльпаны', img: '3.jpg', emoji: '🌷', tag: 'new',
+    occ: ['birthday', 'colleague', 'justso'], desc: 'Весеннее настроение в крафтовом кульке: тюльпаны всех цветов радуги.',
+    compo: ['Тюльпаны микс', 'Крафт', 'Лента'] },
+  { id: 4, name: '51 белый тюльпан', price: 6490, cat: 'Тюльпаны', img: '4.jpg', emoji: '🌷',
+    occ: ['mom', 'wedding'], desc: 'Большой круглый букет из белоснежных тюльпанов в матовой плёнке.',
+    compo: ['Тюльпан белый', 'Плёнка матовая'] },
+  { id: 5, name: 'Подсолнухи', price: 2790, cat: 'Авторские', img: '5.jpg', emoji: '🌻',
+    occ: ['colleague', 'birthday', 'justso'], desc: 'Солнце в руках: семь ярких подсолнухов в оранжевой упаковке.',
+    compo: ['Подсолнух', 'Плёнка', 'Лента'] },
+  { id: 6, name: 'Ромашки с вербой', price: 2490, cat: 'Авторские', img: '6.jpg', emoji: '🌼', tag: 'new',
+    occ: ['justso', 'mom'], desc: 'Лёгкий полевой букет из матрикарии с пушистой вербой. Пахнет летом.',
+    compo: ['Матрикария', 'Верба', 'Плёнка мятная'] },
+  { id: 7, name: 'Пионы и кустовые розы', price: 4990, old: 5490, cat: 'Авторские', img: '7.jpg', emoji: '🌸', tag: 'hit',
+    occ: ['love', 'mom', 'wedding'], desc: 'Нежные пионы, кустовые розы и эвкалипт. Самый любимый букет наших клиентов.',
+    compo: ['Пион', 'Роза кустовая', 'Эвкалипт', 'Кружевная лента'] },
+  { id: 8, name: 'Корзина белых роз', price: 7990, cat: 'Корзины', img: '8.jpg', emoji: '🧺',
+    occ: ['mom', 'colleague'], desc: 'Белые розы и эвкалипт в плетёной корзине. Можно не ставить в вазу.',
+    compo: ['Роза белая', 'Эвкалипт', 'Корзина', 'Флористическая губка'] },
+];
+const occasions = [
+  { id: 'love', name: 'Любимой', img: '2.jpg' },
+  { id: 'mom', name: 'Маме', img: '7.jpg' },
+  { id: 'birthday', name: 'Праздник', img: '3.jpg' },
+  { id: 'wedding', name: 'Свадьба', img: '1.jpg' },
+  { id: 'colleague', name: 'Коллеге', img: '5.jpg' },
+  { id: 'justso', name: 'Просто так', img: '6.jpg' },
+];
+const sizes = [
+  { id: 'S', name: 'Стандарт', k: 1 },
+  { id: 'M', name: 'Пышный', k: 1.35 },
+  { id: 'L', name: 'Роскошный', k: 1.7 },
+];
+const addonsList = [
+  { id: 'card', name: 'Большая открытка', price: 190, em: '💌' },
+  { id: 'choco', name: 'Шоколад ручной работы', price: 490, em: '🍫' },
+  { id: 'balloon', name: 'Шар-сердце', price: 390, em: '🎈' },
+  { id: 'vase', name: 'Стеклянная ваза', price: 890, em: '🏺' },
+  { id: 'bear', name: 'Плюшевый мишка', price: 990, em: '🧸' },
+];
+const FREE_DELIVERY = 5000, DELIVERY_PRICE = 390;
+const cats = ['Все', ...new Set(products.map(p => p.cat))];
+const tagNames = { hit: 'Хит', new: 'Новинка', sale: 'Скидка' };
+
+// ---------- СОСТОЯНИЕ ----------
+let activeCat = 'Все', activeOcc = null, current = 'catalog';
+let cart = {};          // ключ "id|размер" → количество
+let addons = new Set(); // выбранные допы
+let likes = new Set();
+let sheetProduct = null, sheetSize = 'S', delivery = true;
+
+// ---------- ПОМОЩНИКИ ----------
+const $ = id => document.getElementById(id);
+const fmt = n => n.toLocaleString('ru-RU') + ' ₽';
+const byId = id => products.find(p => p.id == id);
+const priceOf = (p, s) => Math.round(p.price * sizes.find(x => x.id === s).k / 10) * 10;
+const cartItems = () => Object.entries(cart).map(([key, qty]) => { const [id, size] = key.split('|'); return { key, p: byId(id), size, qty }; });
+const cartCount = () => Object.values(cart).reduce((a, b) => a + b, 0);
+const goodsSum = () => cartItems().reduce((s, x) => s + priceOf(x.p, x.size) * x.qty, 0)
+                     + addonsList.filter(a => addons.has(a.id)).reduce((s, a) => s + a.price, 0);
+const deliveryCost = () => !delivery || goodsSum() >= FREE_DELIVERY ? 0 : DELIVERY_PRICE;
+const totalSum = () => goodsSum() + deliveryCost();
+const heart = on => `<svg class="i" viewBox="0 0 24 24"><path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.5-7 10-7 10z"/></svg>`;
+const pic = (p, extra = '') => `<div class="pic">${p.emoji}<img src="${p.img}" alt="${p.name}" loading="lazy" onerror="this.remove()">${extra}</div>`;
+
+// ---------- ПОВОДЫ И КАТЕГОРИИ ----------
+function renderFilters() {
+  $('occs').innerHTML = occasions.map(o => `
+    <button class="occ ${activeOcc === o.id ? 'active' : ''}" onclick="App.setOcc('${o.id}')">
+      <div class="ring"><img src="${o.img}" alt=""></div>${o.name}</button>`).join('');
+  $('cats').innerHTML = cats.map(c =>
+    `<button class="cat ${c === activeCat ? 'active' : ''}" onclick="App.setCat('${c}')">${c}</button>`).join('');
+  const occ = occasions.find(o => o.id === activeOcc);
+  $('filterNote').innerHTML = occ
+    ? `<div class="filter-note">Подборка «${occ.name}» <button onclick="App.setOcc(null)">✕</button></div>` : '';
+}
+
+// ---------- КАТАЛОГ ----------
+function renderGrid(animate) {
+  let list = products;
+  if (activeCat !== 'Все') list = list.filter(p => p.cat === activeCat);
+  if (activeOcc) list = list.filter(p => p.occ.includes(activeOcc));
+  $('grid').innerHTML = list.map((p, i) => {
+    const inCart = cartItems().filter(x => x.p.id === p.id).reduce((s, x) => s + x.qty, 0);
+    return `
+    <div class="card" style="${animate ? `animation-delay:${i * 50}ms` : 'animation:none'}" onclick="App.openSheet(${p.id})">
+      ${pic(p, (p.tag ? `<span class="tag ${p.tag}">${tagNames[p.tag]}</span>` : '') +
+        (inCart ? `<span class="in-cart">В корзине · ${inCart}</span>` : '') +
+        `<button class="like ${likes.has(p.id) ? 'on' : ''}" onclick="event.stopPropagation(); App.toggleLike(${p.id})" aria-label="В избранное">${heart()}</button>`)}
+      <div class="info">
+        <div class="name">${p.name}</div>
+        <div class="bottom-row">
+          <div class="price">${p.old ? `<span class="old">${fmt(p.old)}</span>` : '<small>от </small>'}${fmt(p.price)}</div>
+          <button class="plus" onclick="event.stopPropagation(); App.quickAdd(${p.id}, this)" aria-label="Добавить">
+            <svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+        </div>
+      </div>
+    </div>`;
+  }).join('') || `<div class="empty" style="grid-column:1/-1">Ничего не нашлось</div>`;
+}
+
+// ---------- ШТОРКА ТОВАРА ----------
+function openSheet(id) {
+  sheetProduct = byId(id); sheetSize = 'S';
+  renderSheet();
+  $('overlay').classList.add('open'); $('sheet').classList.add('open'); $('sheet').scrollTop = 0;
+  vibrate();
+}
+function closeSheet() { $('overlay').classList.remove('open'); $('sheet').classList.remove('open'); }
+function renderSheet() {
+  const p = sheetProduct;
+  $('sheet').innerHTML = `
+    <div class="grab"></div>
+    <button class="close" onclick="App.closeSheet()" aria-label="Закрыть"><svg class="i" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    ${pic(p, p.tag ? `<span class="tag ${p.tag}">${tagNames[p.tag]}</span>` : '')}
+    <div class="body">
+      <h3>${p.name}</h3>
+      <p class="desc">${p.desc}</p>
+      <div class="compo">${p.compo.map(c => `<span>${c}</span>`).join('')}</div>
+      <div class="label">Размер букета</div>
+      <div class="sizes">${sizes.map(s => `
+        <button class="size ${s.id === sheetSize ? 'active' : ''}" onclick="App.setSize('${s.id}')">
+          <b>${s.name}</b><span>${fmt(priceOf(p, s.id))}</span></button>`).join('')}</div>
+      <button class="big-btn" onclick="App.addFromSheet(this)">Добавить · ${fmt(priceOf(p, sheetSize))}</button>
+    </div>`;
+}
+
+// ---------- ДОБАВЛЕНИЕ С ПОЛЁТОМ В КОРЗИНУ ----------
+function flyToCart(img) {
+  if (!img) { bumpBadge(); return; }
+  const r = img.getBoundingClientRect(), c = $('cartBtn').getBoundingClientRect();
+  const size = Math.min(r.width, 140);
+  const f = img.cloneNode();
+  f.className = 'flyer';
+  Object.assign(f.style, { left: r.left + r.width / 2 - size / 2 + 'px', top: r.top + r.height / 2 - size / 2 + 'px', width: size + 'px', height: size + 'px' });
+  document.body.appendChild(f);
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    f.style.transform = `translate(${c.left + c.width / 2 - (r.left + r.width / 2)}px, ${c.top + c.height / 2 - (r.top + r.height / 2)}px) scale(.12)`;
+    f.style.opacity = '.5';
+  }));
+  setTimeout(() => { f.remove(); bumpBadge(); }, 700);
+}
+function bumpBadge() { const b = $('badge'); b.classList.remove('bump'); void b.offsetWidth; b.classList.add('bump'); vibrate('medium'); }
+function addToCart(id, size) { const k = id + '|' + size; cart[k] = (cart[k] || 0) + 1; }
+function quickAdd(id, btn) {
+  const img = btn.closest('.card').querySelector('.pic img');
+  flyToCart(img); addToCart(id, 'S'); render(false);
+}
+function addFromSheet(btn) {
+  const img = $('sheet').querySelector('.pic img');
+  flyToCart(img); addToCart(sheetProduct.id, sheetSize);
+  setTimeout(closeSheet, 150); render(false);
+}
+function changeQty(key, d) { cart[key] += d; if (cart[key] <= 0) delete cart[key]; vibrate(); render(false); }
+function toggleAddon(id) { addons.has(id) ? addons.delete(id) : addons.add(id); vibrate(); render(false); }
+
+// ---------- КОРЗИНА ----------
+function renderCart() {
+  const items = cartItems();
+  if (!items.length) {
+    $('cartBody').innerHTML = `<div class="empty"><img src="6.jpg" alt=""><b>Пока пусто</b>Загляните в каталог — там красиво</div>`;
+    return;
+  }
+  const left = FREE_DELIVERY - goodsSum();
+  $('cartBody').innerHTML = items.map(x => `
+    <div class="row">${pic(x.p)}
+      <div class="mid"><div class="name">${x.p.name}</div>
+        <div class="meta">${sizes.find(s => s.id === x.size).name} · ${fmt(priceOf(x.p, x.size))}</div></div>
+      <div class="qty"><button onclick="App.changeQty('${x.key}',-1)">−</button><span>${x.qty}</span><button onclick="App.changeQty('${x.key}',1)">+</button></div>
+    </div>`).join('') + `
+    <div class="progress">${left > 0 ? `До бесплатной доставки — ${fmt(left)}` : 'Доставка бесплатная 🎉'}
+      <div class="bar"><i style="width:${Math.min(100, goodsSum() / FREE_DELIVERY * 100)}%"></i></div></div>
+    <div class="label">Добавить к букету</div>
+    <div class="addons">${addonsList.map(a => `
+      <button class="addon ${addons.has(a.id) ? 'on' : ''}" onclick="App.toggleAddon('${a.id}')">
+        <div class="em">${a.em}</div><b>${a.name}</b><span>${addons.has(a.id) ? '✓ добавлено' : '+' + fmt(a.price)}</span></button>`).join('')}</div>
+    <div class="summary">${summaryHtml()}</div>`;
+}
+function summaryHtml() {
+  const d = deliveryCost();
+  return `<div><span>Товары</span><span>${fmt(goodsSum())}</span></div>
+    <div><span>${delivery ? 'Доставка' : 'Самовывоз'}</span><span>${d ? fmt(d) : 'бесплатно'}</span></div>
+    <div class="total"><span>Итого</span><span>${fmt(totalSum())}</span></div>`;
+}
+
+// ---------- ОФОРМЛЕНИЕ ----------
+function setDelivery(on) {
+  delivery = on;
+  [...$('segDelivery').children].forEach((b, i) => b.classList.toggle('active', (i === 0) === on));
+  $('addrBox').classList.toggle('hidden', !on);
+  vibrate(); render(false);
+}
+function submitOrder() {
+  const name = fName.value.trim(), phone = fPhone.value.trim(), err = $('formError');
+  const missing = !name || !phone || (delivery && !fAddr.value.trim()) || !fDate.value ||
+                  (fOther.checked && (!fRName.value.trim() || !fRPhone.value.trim()));
+  if (missing) { err.textContent = 'Заполните, пожалуйста, все поля выше'; err.classList.remove('hidden'); vibrate('heavy'); return; }
+  err.classList.add('hidden');
+  const when = new Date(fDate.value).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+  $('doneText').innerHTML = `${name}, спасибо! ${delivery ? `Привезём ${when}, ${fTime.value}` : `Букет будет готов ${when}, ${fTime.value}`}.<br>
+    Сумма: <b>${fmt(totalSum())}</b><br><br>Флорист пришлёт фото букета перед отправкой.`;
+  show('done'); confetti(); vibrate('heavy');
+}
+function confetti() {
+  const colors = ['#d6336c', '#f06292', '#ffc9d7', '#e2a93b', '#6f9474'];
+  for (let i = 0; i < 40; i++) {
+    const c = document.createElement('div'), a = Math.random() * Math.PI * 2, d = 120 + Math.random() * 220;
+    c.className = 'confetti';
+    c.style.cssText = `background:${colors[i % 5]}; --x:${Math.cos(a) * d}px; --y:${Math.sin(a) * d + 120}px; --r:${Math.random() * 720}deg; animation-delay:${Math.random() * 120}ms`;
+    document.body.appendChild(c); setTimeout(() => c.remove(), 1900);
+  }
+}
+
+// ---------- НИЖНЯЯ КНОПКА И ЭКРАНЫ ----------
+function renderButton() {
+  const btn = $('mainBtn'), n = cartCount();
+  btn.classList.remove('hidden');
+  if (current === 'catalog') {
+    if (!n) return btn.classList.add('hidden');
+    btn.textContent = `Корзина · ${n} шт · ${fmt(goodsSum())}`; btn.onclick = () => show('cart');
+  } else if (current === 'cart') {
+    if (!n) return btn.classList.add('hidden');
+    btn.textContent = `Оформить · ${fmt(totalSum())}`; btn.onclick = () => show('checkout');
+  } else if (current === 'checkout') {
+    btn.textContent = `Заказать за ${fmt(totalSum())}`; btn.onclick = submitOrder;
+  } else {
+    btn.textContent = 'Вернуться в магазин'; btn.onclick = () => { cart = {}; addons.clear(); show('catalog'); };
+  }
+}
+function show(name) {
+  ['catalog', 'cart', 'checkout', 'done'].forEach(s => $(s).classList.toggle('hidden', s !== name));
+  current = name; window.scrollTo(0, 0); closeSheet(); render(name === 'catalog');
+}
+function render(animate) {
+  renderFilters(); renderGrid(animate); renderCart();
+  $('checkoutSummary').innerHTML = summaryHtml();
+  const n = cartCount(); $('badge').textContent = n; $('badge').classList.toggle('hidden', !n);
+  renderButton();
+}
+
+// ---------- Действия, доступные из разметки ----------
+window.App = {
+  setCat: c => { activeCat = c; vibrate(); render(true); },
+  setOcc: o => { activeOcc = activeOcc === o ? null : o; activeCat = 'Все'; vibrate(); render(true);
+                 if (activeOcc) $('cats').scrollIntoView({ behavior: 'smooth', block: 'start' }); },
+  toggleLike: id => { likes.has(id) ? likes.delete(id) : likes.add(id); vibrate(); render(false); },
+  setSize: s => { sheetSize = s; vibrate(); renderSheet(); },
+  openSheet, closeSheet, quickAdd, addFromSheet, changeQty, toggleAddon,
+};
+window.show = show; window.setDelivery = setDelivery; window.closeSheet = closeSheet;
+window.resetFilters = () => { activeCat = 'Все'; activeOcc = null; render(true); };
+
+// ---------- Лепестки ----------
+for (let i = 0; i < 14; i++) {
+  const el = document.createElement('div'), s = 8 + Math.random() * 10;
+  el.className = 'petal';
+  el.style.cssText = `left:${Math.random() * 100}%;width:${s}px;height:${s}px;animation-duration:${10 + Math.random() * 10}s;animation-delay:${-Math.random() * 20}s`;
+  $('petals').appendChild(el);
+}
+
+// ---------- Старт ----------
+const fDate = $('fDate');
+fDate.value = new Date(Date.now() + 864e5).toISOString().slice(0, 10);
+fDate.min = new Date().toISOString().slice(0, 10);
+render(true);
+}
+</script>
+</body>
+</html>
